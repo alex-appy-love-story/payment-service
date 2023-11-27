@@ -11,7 +11,7 @@ require (
 require github.com/shopspring/decimal v1.3.1 // indirect
 
 require (
-	github.com/alex-appy-love-story/db-lib v0.0.0-20231127175148-ece64d51ff31
+	github.com/alex-appy-love-story/db-lib v0.0.0-20231127184236-a7db7cb54fa5
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect

@@ -62,6 +62,12 @@ func Perform(p StepPayload, ctx TaskContext) (err error) {
 
 		// User can't afford.
 		if !usr.Balance.GreaterThanOrEqual(totalCost) {
+
+			err := SetOrderStatus(ctx.OrderSvcAddr, p.OrderID, order.PAYMENT_FAIL_INSUFFICIENT)
+			if err != nil {
+				return fmt.Errorf("failed to set status")
+			}
+
 			return fmt.Errorf("insufficient funds")
 		}
 

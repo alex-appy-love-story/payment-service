@@ -1,12 +1,15 @@
 package tasks
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
+	"github.com/alex-appy-love-story/db-lib/models/order"
 	"github.com/alex-appy-love-story/worker-template/circuitbreaker"
 	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
@@ -161,6 +164,36 @@ func RevertPrevious(stepPayload StepPayload, payload map[string]interface{}, ctx
 	}
 
 	log.Println("Queued previous revert")
+
+	return nil
+}
+
+func SetOrderStatus(orderSvcAddr string, orderID uint, status order.OrderStatus) error {
+	// Create client.
+	client := &http.Client{}
+	requestURL := fmt.Sprintf("http://%s/fail/%d", orderSvcAddr, orderID)
+
+	payloadBuf := new(bytes.Buffer)
+	if err := json.NewEncoder(payloadBuf).Encode(map[string]interface{}{
+		"order_status": status,
+	}); err != nil {
+		return err
+	}
+
+	// Set up request.
+	req, err := http.NewRequest("PUT", requestURL, payloadBuf)
+	if err != nil {
+		fmt.Printf("error making http request: %s\n", err)
+		return err
+	}
+
+	// Fetch Request.
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer resp.Body.Close()
 
 	return nil
 }
