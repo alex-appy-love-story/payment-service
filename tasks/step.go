@@ -86,8 +86,9 @@ func Perform(p StepPayload, ctx TaskContext) (err error) {
 	}
 
 	nextPayload := map[string]interface{}{
-		"amount":   p.Amount,
-		"token_id": p.TokenID,
+		"amount":    p.Amount,
+		"token_id":  p.TokenID,
+		"order_id:": p.OrderID,
 	}
 
 	return PerformNext(p, nextPayload, ctx)
