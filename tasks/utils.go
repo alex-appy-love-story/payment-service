@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/alex-appy-love-story/worker-template/circuitbreaker"
@@ -32,6 +33,7 @@ type TaskContext struct {
 	ServerQueue    string
 	PreviousQueue  string
 	CircuitBreaker *circuitbreaker.CB
+	OrderSvcAddr   string
 }
 
 func GetTaskContext(ctx context.Context) (taskCtx TaskContext) {
@@ -67,6 +69,14 @@ func GetTaskContext(ctx context.Context) (taskCtx TaskContext) {
 		taskCtx.CircuitBreaker = val.(*circuitbreaker.CB)
 	}
 
+	if val := ctx.Value("circuit_breaker"); val != nil {
+		taskCtx.CircuitBreaker = val.(*circuitbreaker.CB)
+	}
+
+	if val := ctx.Value("order_svc_addr"); val != nil {
+		taskCtx.OrderSvcAddr = val.(string)
+	}
+
 	return
 }
 
@@ -74,7 +84,7 @@ func GetTaskState(doIn time.Duration, taskID string, ctx TaskContext) (TaskState
 
 	time.Sleep(doIn)
 
-	taskInfo, err := ctx.AsynqInspector.GetTaskInfo(ctx.ServerQueue, taskID)
+	taskInfo, err := ctx.AsynqInspector.GetTaskInfo(ctx.NextQueue, taskID)
 
 	if err != nil {
 		if err.Error() == TASK_NOT_FOUND {
@@ -89,11 +99,16 @@ func GetTaskState(doIn time.Duration, taskID string, ctx TaskContext) (TaskState
 	} else {
 		if taskInfo.State.String() == "active" {
 			fmt.Println("Job is being processed.")
-            return Done, nil
+			return Done, nil
+		} else if taskInfo.State.String() == "archived" {
+			fmt.Println("Task failed!")
+			ctx.CircuitBreaker.IncrementFails()
+			ctx.AsynqInspector.DeleteTask(ctx.NextQueue, taskID)
+			return Failed, fmt.Errorf(taskInfo.LastErr)
 		} else {
 			fmt.Println("Job is still in the queue. Cancel!")
 			ctx.CircuitBreaker.IncrementFails()
-			ctx.AsynqInspector.DeleteTask(ctx.ServerQueue, taskID)
+			ctx.AsynqInspector.DeleteTask(ctx.NextQueue, taskID)
 		}
 		// Job is still pending. We got timeout.
 		return Expired, fmt.Errorf("Task: Expired")
@@ -106,7 +121,7 @@ func PerformNext(stepPayload StepPayload, payload map[string]interface{}, ctx Ta
 		return err
 	}
 
-	task := asynq.NewTask("task:perform", p)
+	task := asynq.NewTask("task:perform", p, asynq.MaxRetry(0))
 
 	// Process the task immediately.
 	taskInfo, err := ctx.AsynqClient.Enqueue(task, asynq.Queue(ctx.NextQueue))
@@ -136,15 +151,16 @@ func RevertPrevious(stepPayload StepPayload, payload map[string]interface{}, ctx
 		return err
 	}
 
-	task := asynq.NewTask("task:revert", p)
+	task := asynq.NewTask("task:revert", p, asynq.MaxRetry(0))
 
 	// Process the task immediately.
-	_, err = ctx.AsynqClient.Enqueue(task, asynq.Queue(ctx.PreviousQueue), asynq.MaxRetry(5))
+	_, err = ctx.AsynqClient.Enqueue(task, asynq.Queue(ctx.PreviousQueue), asynq.MaxRetry(0))
 	if err != nil {
-
 		// Failed to queue.
 		return err
 	}
+
+	log.Println("Queued previous revert")
 
 	return nil
 }

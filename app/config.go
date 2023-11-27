@@ -18,6 +18,7 @@ type Config struct {
 	QueueConfig    QueueConfig
 	DatabaseConfig DatabaseConfig
 	WorkerCount    int
+	OrderSvcAddr   string
 }
 
 type QueueConfig struct {
@@ -36,12 +37,14 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		RedisAddress: "localhost:6379",
 		DatabaseConfig: DatabaseConfig{
-			User:     "user",
-			Password: "password",
-			Address:  "localhost:3306",
+			User:         "user",
+			Password:     "password",
+			Address:      "localhost:3306",
+			DatabaseName: "payment-db",
 		},
 
-		WorkerCount: 5,
+		OrderSvcAddr: "localhost:5001",
+		WorkerCount:  5,
 	}
 
 	if redisAddr, exists := os.LookupEnv("REDIS_ADDR"); exists {
@@ -50,6 +53,10 @@ func LoadConfig() (*Config, error) {
 
 	if dbAddress, exists := os.LookupEnv("DB_ADDRESS"); exists {
 		cfg.DatabaseConfig.Address = dbAddress
+	}
+
+	if orderSvcAddr, exists := os.LookupEnv("ORDER_SVC_ADDR"); exists {
+		cfg.OrderSvcAddr = orderSvcAddr
 	}
 
 	if dbUser, exists := os.LookupEnv("DB_USER"); exists {

@@ -28,7 +28,7 @@ func CircuitBreakerMiddleware(h asynq.Handler) asynq.Handler {
 		cb := GetTaskContext(ctx).CircuitBreaker
 		err := h.ProcessTask(ctx, t)
 
-		fmt.Println("Task error: ", err)
+		fmt.Println("Task error:", err)
 
 		if cb.IsState("open") {
 			return err

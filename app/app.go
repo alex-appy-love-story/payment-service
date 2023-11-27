@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	db "github.com/alex-appy-love-story/db-lib"
+	"github.com/alex-appy-love-story/db-lib/models/token"
+	"github.com/alex-appy-love-story/db-lib/models/user"
 	"github.com/alex-appy-love-story/worker-template/circuitbreaker"
 	"github.com/alex-appy-love-story/worker-template/tasks"
 	"github.com/hibiken/asynq"
@@ -51,6 +54,8 @@ func (a *App) connectDB(ctx context.Context) error {
 		a.Config.DatabaseConfig.DatabaseName,
 	)
 
+	fmt.Println(dsn)
+
 	gorm, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -70,6 +75,7 @@ func (a *App) Start(ctx context.Context) error {
 			Queues: map[string]int{
 				a.Config.QueueConfig.Server: 10,
 			},
+
 			BaseContext: func() context.Context {
 				baseContext := context.Background()
 				baseContext = context.WithValue(baseContext, "asynq_client", a.AsynqClient)
@@ -79,6 +85,7 @@ func (a *App) Start(ctx context.Context) error {
 				baseContext = context.WithValue(baseContext, "asynq_inspector", a.AsynqInspector)
 				baseContext = context.WithValue(baseContext, "previous_queue", a.Config.QueueConfig.Previous)
 				baseContext = context.WithValue(baseContext, "circuit_breaker", a.CircuitBreaker)
+				baseContext = context.WithValue(baseContext, "order_svc_addr", a.Config.OrderSvcAddr)
 				return baseContext
 			},
 		},
@@ -94,6 +101,27 @@ func (a *App) Start(ctx context.Context) error {
 		fmt.Println("No connection to db!")
 	} else {
 		fmt.Println("Successfully connected to db!")
+
+		migrator := a.DBClient.Migrator()
+
+		if err := db.InitTables(a.DBClient, &user.User{}); err != nil {
+			return err
+		}
+
+		if !migrator.HasTable(&token.Token{}) {
+			a.DBClient.Transaction(func(tsx *gorm.DB) error {
+				if err := db.InitTables(tsx, &token.Token{}); err != nil {
+					return err
+				}
+				token.CreateToken(tsx, 250.0) // ID 1
+				token.CreateToken(tsx, 125.0) // ID 2
+				token.CreateToken(tsx, 500.0) // ID 3
+				token.CreateToken(tsx, 25.0)  // ID 4
+				return nil
+			})
+
+		}
+
 	}
 
 	defer func() {
