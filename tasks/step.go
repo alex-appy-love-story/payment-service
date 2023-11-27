@@ -50,6 +50,8 @@ func Perform(p StepPayload, ctx TaskContext) (err error) {
 
 			// Create new user if DNE.
 			if err.Error() == "record not found" {
+
+				log.Println("Creating a new user!")
 				usr, err = user.CreateUser(tsx, p.Username)
 				if err != nil {
 					return err
@@ -89,6 +91,7 @@ func Perform(p StepPayload, ctx TaskContext) (err error) {
 		"amount":    p.Amount,
 		"token_id":  p.TokenID,
 		"order_id:": p.OrderID,
+		"username":  p.Username,
 	}
 
 	return PerformNext(p, nextPayload, ctx)
