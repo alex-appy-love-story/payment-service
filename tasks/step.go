@@ -88,11 +88,13 @@ func Perform(p StepPayload, ctx TaskContext) (err error) {
 	}
 
 	nextPayload := map[string]interface{}{
-		"amount":    p.Amount,
-		"token_id":  p.TokenID,
-		"order_id:": p.OrderID,
-		"username":  p.Username,
+		"amount":   p.Amount,
+		"token_id": p.TokenID,
+		"username": p.Username,
+		"order_id": p.OrderID,
 	}
+
+	log.Printf("Order ID being sent: %d\n", p.OrderID)
 
 	return PerformNext(p, nextPayload, ctx)
 }
