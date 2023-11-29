@@ -18,9 +18,11 @@ func main() {
 	config, err := app.LoadConfig()
 
 	if err != nil {
-		log.Fatalln("Error:", err)
+		log.Println(err)
 	}
 
 	app := app.New(*config)
+
 	app.Start(context.Background())
+
 }

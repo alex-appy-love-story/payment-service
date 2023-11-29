@@ -14,6 +14,6 @@ func TimeToPointer(x time.Duration) *time.Duration {
 }
 
 func StringToState(str string) (State, bool) {
-    c, ok := states[strings.ToLower(str)]
-    return c, ok
+	c, ok := states[strings.ToLower(str)]
+	return c, ok
 }

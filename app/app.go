@@ -2,16 +2,21 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
 
-	db "github.com/alex-appy-love-story/db-lib"
-	"github.com/alex-appy-love-story/db-lib/models/token"
-	"github.com/alex-appy-love-story/db-lib/models/user"
 	"github.com/alex-appy-love-story/worker-template/circuitbreaker"
 	"github.com/alex-appy-love-story/worker-template/tasks"
 	"github.com/hibiken/asynq"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
+	db "github.com/alex-appy-love-story/db-lib"
+	"github.com/alex-appy-love-story/db-lib/models/token"
+	"github.com/alex-appy-love-story/db-lib/models/user"
 )
 
 type App struct {
@@ -54,8 +59,6 @@ func (a *App) connectDB(ctx context.Context) error {
 		a.Config.DatabaseConfig.DatabaseName,
 	)
 
-	fmt.Println(dsn)
-
 	gorm, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -67,6 +70,20 @@ func (a *App) connectDB(ctx context.Context) error {
 }
 
 func (a *App) Start(ctx context.Context) error {
+	// Handle SIGINT (CTRL+C) gracefully.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	// Set up OpenTelemetry.
+	otelShutdown, err := SetupOTelSDK(ctx, a.Config)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	// Handle shutdown properly so nothing leaks.
+	defer func() {
+		err = errors.Join(err, otelShutdown(ctx))
+	}()
 
 	server := asynq.NewServer(
 		asynq.RedisClientOpt{Addr: a.Config.RedisAddress},

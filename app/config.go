@@ -19,6 +19,12 @@ type Config struct {
 	DatabaseConfig DatabaseConfig
 	WorkerCount    int
 	OrderSvcAddr   string
+	OtelConfig     OtelConfig
+}
+
+type OtelConfig struct {
+	ExporterEndpoint string
+	Insecure         string
 }
 
 type QueueConfig struct {
@@ -37,26 +43,28 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		RedisAddress: "localhost:6379",
 		DatabaseConfig: DatabaseConfig{
-			User:         "user",
-			Password:     "password",
-			Address:      "localhost:3306",
-			DatabaseName: "payment-db",
+			User:     "user",
+			Password: "password",
+			Address:  "localhost:3306",
 		},
-
 		OrderSvcAddr: "localhost:5001",
 		WorkerCount:  5,
+		OtelConfig: OtelConfig{
+			ExporterEndpoint: "localhost:4317",
+			Insecure:         "true",
+		},
 	}
 
 	if redisAddr, exists := os.LookupEnv("REDIS_ADDR"); exists {
 		cfg.RedisAddress = redisAddr
 	}
 
-	if dbAddress, exists := os.LookupEnv("DB_ADDRESS"); exists {
-		cfg.DatabaseConfig.Address = dbAddress
-	}
-
 	if orderSvcAddr, exists := os.LookupEnv("ORDER_SVC_ADDR"); exists {
 		cfg.OrderSvcAddr = orderSvcAddr
+	}
+
+	if dbAddress, exists := os.LookupEnv("DB_ADDRESS"); exists {
+		cfg.DatabaseConfig.Address = dbAddress
 	}
 
 	if dbUser, exists := os.LookupEnv("DB_USER"); exists {
@@ -69,6 +77,10 @@ func LoadConfig() (*Config, error) {
 
 	if dbName, exists := os.LookupEnv("DB_NAME"); exists {
 		cfg.DatabaseConfig.DatabaseName = dbName
+	}
+
+	if otelExporter, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT"); exists {
+		cfg.OtelConfig.ExporterEndpoint = otelExporter
 	}
 
 	if workerCount, exists := os.LookupEnv("WORKER_COUNT"); exists {
