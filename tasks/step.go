@@ -29,10 +29,6 @@ type StepPayload struct {
 func Perform(p StepPayload, ctx *TaskContext) (err error) {
 	ctx.Span.AddEvent("Making payment")
 
-	if p.Action == "err" {
-		return fmt.Errorf("Test error!!!")
-	}
-
 	err = ctx.GormClient.Transaction(func(tsx *gorm.DB) error {
 
 		tok, err := token.GetToken(tsx, p.TokenID)

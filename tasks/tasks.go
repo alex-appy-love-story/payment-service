@@ -29,7 +29,7 @@ const (
 )
 
 type SagaPayload struct {
-	Action string // "perform" or "revert"
+	FailTrigger string // Name of the service to fail.
 
 	// For Otel
 	TraceCarrier propagation.MapCarrier `json:"trace_carrier,omitempty"`
@@ -92,6 +92,13 @@ func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
 	fetchSpan(&p, ctx, taskContext, "perform")
 	defer taskContext.Span.End()
 
+	var err error
+	if p.FailTrigger == taskContext.ServerQueue {
+		err = fmt.Errorf("Forced to fail")
+		taskContext.TaskFailed(err)
+		return err
+	}
+
 	// Error channel. This can either catch context cancellation or if an error occured within the task.
 	c := make(chan error, 1)
 
@@ -101,7 +108,6 @@ func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
 		c <- Perform(p, taskContext)
 	}()
 
-	var err error
 	select {
 	case <-ctx.Done():
 		// cancelation signal received, abandon this work.
