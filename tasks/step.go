@@ -33,6 +33,9 @@ func Perform(p StepPayload, ctx *TaskContext) (err error) {
 
 		tok, err := token.GetToken(tsx, p.TokenID)
 		if err != nil {
+			if err := SetOrderStatus(ctx.OrderSvcAddr, p.OrderID, order.PAYMENT_FAIL_TOKEN_NOT_FOUND); err != nil {
+				return err
+			}
 			return err
 		}
 

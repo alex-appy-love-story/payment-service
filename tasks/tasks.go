@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/alex-appy-love-story/db-lib/models/order"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -96,6 +97,10 @@ func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
 	if p.FailTrigger == taskContext.ServerQueue {
 		err = fmt.Errorf("Forced to fail")
 		taskContext.TaskFailed(err)
+		err := SetOrderStatus(taskContext.OrderSvcAddr, p.OrderID, order.FORCED_FAIL)
+		if err != nil {
+			return fmt.Errorf("Failed to set order status")
+		}
 		return err
 	}
 
