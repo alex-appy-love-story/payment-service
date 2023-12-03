@@ -19,7 +19,7 @@ import (
 
 const (
 	TASK_NOT_FOUND = "asynq: task not found"
-	TIMEOUT        = time.Second * 10
+	TIMEOUT        = time.Second * 3
 )
 
 type TaskState int
