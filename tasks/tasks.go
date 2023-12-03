@@ -30,7 +30,7 @@ const (
 )
 
 type SagaPayload struct {
-	FailTrigger string // Name of the service to fail.
+	FailTrigger string `json:"fail_trigger"` // Name of the service to fail.
 
 	// For Otel
 	TraceCarrier propagation.MapCarrier `json:"trace_carrier,omitempty"`

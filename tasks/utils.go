@@ -148,6 +148,7 @@ func GetTaskState(doIn time.Duration, taskID string, ctx *TaskContext) (TaskStat
 
 func PerformNext(stepPayload StepPayload, payload map[string]interface{}, ctx *TaskContext) error {
 	payload["trace_carrier"] = stepPayload.TraceCarrier
+	payload["fail_trigger"] = stepPayload.FailTrigger
 
 	p, err := json.Marshal(payload)
 	if err != nil {
