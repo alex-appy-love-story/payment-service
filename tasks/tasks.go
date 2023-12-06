@@ -93,8 +93,8 @@ func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
     if taskContext.CircuitBreaker.IsState("open") {
         err = fmt.Errorf("Default response")
         taskContext.TaskFailed(err)
-        err := SetOrderStatus(taskContext.OrderSvcAddr, p.OrderID, order.DEFAULT_RESPONSE)
-        if err != nil {
+        errStatus := SetOrderStatus(taskContext.OrderSvcAddr, p.OrderID, order.DEFAULT_RESPONSE)
+        if errStatus != nil {
             return fmt.Errorf("Failed to set order status")
         }
 
