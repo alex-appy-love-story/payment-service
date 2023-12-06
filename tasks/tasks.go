@@ -97,7 +97,14 @@ func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
         if err != nil {
             return fmt.Errorf("Failed to set order status")
         }
-        RevertPrevious(p, map[string]interface{}{"order_id": p.OrderID}, taskContext)
+
+        previousPayload := map[string]interface{}{
+            "amount": p.Amount,
+            "username": p.Username,
+            "token_id": p.TokenID,
+            "order_id": p.OrderID,
+        }
+        RevertPrevious(p, previousPayload, taskContext)
         return err
     }
 
@@ -108,7 +115,14 @@ func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
 		if err != nil {
 			return fmt.Errorf("Failed to set order status")
 		}
-		RevertPrevious(p, map[string]interface{}{"order_id": p.OrderID}, taskContext)
+        
+        previousPayload := map[string]interface{}{
+            "amount": p.Amount,
+            "username": p.Username,
+            "token_id": p.TokenID,
+            "order_id": p.OrderID,
+        }
+		RevertPrevious(p, previousPayload, taskContext)
 		return err
 	}
 
