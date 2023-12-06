@@ -79,11 +79,6 @@ func fetchSpan(p *StepPayload, ctx context.Context, taskCtx *TaskContext, job st
 func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
 	taskContext := GetTaskContext(ctx)
 
-	// Immediately send back default response if CB is open
-	if taskContext.CircuitBreaker.IsState("open") {
-		return fmt.Errorf("Default response.")
-	}
-
 	var p StepPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
@@ -93,7 +88,19 @@ func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
 	fetchSpan(&p, ctx, taskContext, "perform")
 	defer taskContext.Span.End()
 
-	var err error
+    // Immediately send back default response if CB is open
+    var err error
+    if taskContext.CircuitBreaker.IsState("open") {
+        err = fmt.Errorf("Default response")
+        taskContext.TaskFailed(err)
+        err := SetOrderStatus(taskContext.OrderSvcAddr, p.OrderID, order.DEFAULT_RESPONSE)
+        if err != nil {
+            return fmt.Errorf("Failed to set order status")
+        }
+        RevertPrevious(p, map[string]interface{}{"order_id": p.OrderID}, taskContext)
+        return err
+    }
+
 	if p.FailTrigger == taskContext.ServerQueue {
 		err = fmt.Errorf("Forced to fail")
 		taskContext.TaskFailed(err)
