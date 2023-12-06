@@ -58,7 +58,7 @@ func NewCircuitBreaker(opts ...CBOptions) *CB {
 	}
 
 	if opt.OpenInterval == nil {
-		opt.OpenInterval = TimeToPointer(5 * time.Second)
+		opt.OpenInterval = TimeToPointer(8 * time.Second)
 	}
 
 	cb := &CB{
