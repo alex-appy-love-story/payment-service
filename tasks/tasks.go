@@ -111,8 +111,8 @@ func HandlePerformStepTask(ctx context.Context, t *asynq.Task) error {
 	if p.FailTrigger == taskContext.ServerQueue {
 		err = fmt.Errorf("Forced to fail")
 		taskContext.TaskFailed(err)
-		err := SetOrderStatus(taskContext.OrderSvcAddr, p.OrderID, order.FORCED_FAIL)
-		if err != nil {
+		errStatus := SetOrderStatus(taskContext.OrderSvcAddr, p.OrderID, order.FORCED_FAIL)
+		if errStatus != nil {
 			return fmt.Errorf("Failed to set order status")
 		}
         
